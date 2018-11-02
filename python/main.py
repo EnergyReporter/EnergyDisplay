@@ -49,7 +49,8 @@ def main():
     draw.chord((40, 80, 180, 220), 0, 360, fill = 127)
     epd.display_frame(epd.get_frame_buffer(image))
 
-    image = Image.open('640x384.bmp')
+    # image = Image.open('640x384.bmp')
+    image = Image.open('EnergyReporter.bmp')
     epd.display_frame(epd.get_frame_buffer(image))
 
     # You can get frame buffer from an image or import the buffer directly:
