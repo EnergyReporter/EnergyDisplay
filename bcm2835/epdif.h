@@ -29,10 +29,10 @@
 #define EPDIF_H
 
 // Pin definition
-#define RST_PIN         2
-#define DC_PIN          3
-#define CS_PIN          10
-#define BUSY_PIN        0
+#define RST_PIN         17
+#define DC_PIN          25
+#define CS_PIN           8
+#define BUSY_PIN        24
 
 // Pin level definition
 #define LOW             0

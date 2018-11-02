@@ -1,9 +1,9 @@
 /**
- *  @filename   :   epdpaint.h
- *  @brief      :   Header file for epdpaint.cpp
+ *  @filename   :   epd7in5bpaint.h
+ *  @brief      :   Header file for epd7in5bpaint.cpp
  *  @author     :   Yehui from Waveshare
  *  
- *  Copyright (C) Waveshare     July 28 2017
+ *  Copyright (C) Waveshare     August 18 2017
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documnetation files (the "Software"), to deal
@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef EPDPAINT_H
-#define EPDPAINT_H
+#ifndef EPD7IN5BPAINT_H
+#define EPD7IN5BPAINT_H
 
 // Display orientation
 #define ROTATE_0            0
@@ -33,8 +33,10 @@
 #define ROTATE_180          2
 #define ROTATE_270          3
 
-// Color inverse. 1 or 0 = set or reset a bit if set a colored pixel
-#define IF_INVERT_COLOR     0
+// Color definition
+#define EPDPAINT_BLACK      0x0
+#define EPDPAINT_RED        0x4
+#define EPDPAINT_WHITE      0x3
 
 #include "fonts.h"
 
@@ -42,7 +44,7 @@ class Paint {
 public:
     Paint(unsigned char* image, int width, int height);
     ~Paint();
-    void Clear(int colored);
+    void Clear(int color);
     int  GetWidth(void);
     void SetWidth(int width);
     int  GetHeight(void);
@@ -50,17 +52,17 @@ public:
     int  GetRotate(void);
     void SetRotate(int rotate);
     unsigned char* GetImage(void);
-    void DrawAbsolutePixel(int x, int y, int colored);
-    void DrawPixel(int x, int y, int colored);
-    void DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored);
-    void DrawStringAt(int x, int y, const char* text, sFONT* font, int colored);
-    void DrawLine(int x0, int y0, int x1, int y1, int colored);
-    void DrawHorizontalLine(int x, int y, int width, int colored);
-    void DrawVerticalLine(int x, int y, int height, int colored);
-    void DrawRectangle(int x0, int y0, int x1, int y1, int colored);
-    void DrawFilledRectangle(int x0, int y0, int x1, int y1, int colored);
-    void DrawCircle(int x, int y, int radius, int colored);
-    void DrawFilledCircle(int x, int y, int radius, int colored);
+    void DrawAbsolutePixel(int x, int y, int color);
+    void DrawPixel(int x, int y, int color);
+    void DrawCharAt(int x, int y, char ascii_char, sFONT* font, int color);
+    void DrawStringAt(int x, int y, const char* text, sFONT* font, int color);
+    void DrawLine(int x0, int y0, int x1, int y1, int color);
+    void DrawHorizontalLine(int x, int y, int width, int color);
+    void DrawVerticalLine(int x, int y, int height, int color);
+    void DrawRectangle(int x0, int y0, int x1, int y1, int color);
+    void DrawFilledRectangle(int x0, int y0, int x1, int y1, int color);
+    void DrawCircle(int x, int y, int radius, int color);
+    void DrawFilledCircle(int x, int y, int radius, int color);
 
 private:
     unsigned char* image;

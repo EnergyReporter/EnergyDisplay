@@ -1,9 +1,9 @@
 /**
- *  @filename   :   epdpaint.cpp
+ *  @filename   :   epd7in5bpaint.cpp
  *  @brief      :   Paint tools
  *  @author     :   Yehui from Waveshare
  *  
- *  Copyright (C) Waveshare     September 9 2017
+ *  Copyright (C) Waveshare     September 12 2017
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documnetation files (the "Software"), to deal
@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "epdpaint.h"
+#include "epd7in5bpaint.h"
 
 Paint::Paint(unsigned char* image, int width, int height) {
     this->rotate = ROTATE_0;
@@ -40,10 +40,10 @@ Paint::~Paint() {
 /**
  *  @brief: clear the image
  */
-void Paint::Clear(int colored) {
+void Paint::Clear(int color) {
     for (int x = 0; x < this->width; x++) {
         for (int y = 0; y < this->height; y++) {
-            DrawAbsolutePixel(x, y, colored);
+            DrawAbsolutePixel(x, y, color);
         }
     }
 }
@@ -52,22 +52,25 @@ void Paint::Clear(int colored) {
  *  @brief: this draws a pixel by absolute coordinates.
  *          this function won't be affected by the rotate parameter.
  */
-void Paint::DrawAbsolutePixel(int x, int y, int colored) {
+void Paint::DrawAbsolutePixel(int x, int y, int color) {
     if (x < 0 || x >= this->width || y < 0 || y >= this->height) {
         return;
     }
-    if (IF_INVERT_COLOR) {
-        if (colored) {
-            image[(x + y * this->width) / 8] |= 0x80 >> (x % 8);
-        } else {
-            image[(x + y * this->width) / 8] &= ~(0x80 >> (x % 8));
-        }
-    } else {
-        if (colored) {
-            image[(x + y * this->width) / 8] &= ~(0x80 >> (x % 8));
-        } else {
-            image[(x + y * this->width) / 8] |= 0x80 >> (x % 8);
-        }
+    switch (color) {
+    case EPDPAINT_BLACK:
+        image[(x + y * this->width) / 2] &= ~(0xF0 >> (x % 2 * 4));
+        break;
+    case EPDPAINT_RED:
+        image[(x + y * this->width) / 2] &= ~(0xF0 >> (x % 2 * 4));
+        image[(x + y * this->width) / 2] ^= 0x40 >> (x % 2 * 4);
+        break;
+    case EPDPAINT_WHITE:
+        image[(x + y * this->width) / 2] &= ~(0xF0 >> (x % 2 * 4));
+        image[(x + y * this->width) / 2] ^= 0x30 >> (x % 2 * 4);
+        break;
+    default:
+        /* do nothing */
+        break;
     }
 }
 
@@ -105,13 +108,14 @@ void Paint::SetRotate(int rotate){
 /**
  *  @brief: this draws a pixel by the coordinates
  */
-void Paint::DrawPixel(int x, int y, int colored) {
+void Paint::DrawPixel(int x, int y, int color) {
     int point_temp;
+
     if (this->rotate == ROTATE_0) {
         if(x < 0 || x >= this->width || y < 0 || y >= this->height) {
             return;
         }
-        DrawAbsolutePixel(x, y, colored);
+        DrawAbsolutePixel(x, y, color);
     } else if (this->rotate == ROTATE_90) {
         if(x < 0 || x >= this->height || y < 0 || y >= this->width) {
           return;
@@ -119,14 +123,14 @@ void Paint::DrawPixel(int x, int y, int colored) {
         point_temp = x;
         x = this->width - y;
         y = point_temp;
-        DrawAbsolutePixel(x, y, colored);
+        DrawAbsolutePixel(x, y, color);
     } else if (this->rotate == ROTATE_180) {
         if(x < 0 || x >= this->width || y < 0 || y >= this->height) {
           return;
         }
         x = this->width - x;
         y = this->height - y;
-        DrawAbsolutePixel(x, y, colored);
+        DrawAbsolutePixel(x, y, color);
     } else if (this->rotate == ROTATE_270) {
         if(x < 0 || x >= this->height || y < 0 || y >= this->width) {
           return;
@@ -134,14 +138,14 @@ void Paint::DrawPixel(int x, int y, int colored) {
         point_temp = x;
         x = y;
         y = this->height - point_temp;
-        DrawAbsolutePixel(x, y, colored);
+        DrawAbsolutePixel(x, y, color);
     }
 }
 
 /**
  *  @brief: this draws a charactor on the frame buffer but not refresh
  */
-void Paint::DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored) {
+void Paint::DrawCharAt(int x, int y, char ascii_char, sFONT* font, int color) {
     int i, j;
     unsigned int char_offset = (ascii_char - ' ') * font->Height * (font->Width / 8 + (font->Width % 8 ? 1 : 0));
     const unsigned char* ptr = &font->table[char_offset];
@@ -149,7 +153,7 @@ void Paint::DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored) 
     for (j = 0; j < font->Height; j++) {
         for (i = 0; i < font->Width; i++) {
             if (*ptr & (0x80 >> (i % 8))) {
-                DrawPixel(x + i, y + j, colored);
+                DrawPixel(x + i, y + j, color);
             }
             if (i % 8 == 7) {
                 ptr++;
@@ -164,7 +168,7 @@ void Paint::DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored) 
 /**
 *  @brief: this displays a string on the frame buffer but not refresh
 */
-void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int colored) {
+void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int color) {
     const char* p_text = text;
     unsigned int counter = 0;
     int refcolumn = x;
@@ -172,7 +176,7 @@ void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int colore
     /* Send the string character by character on EPD */
     while (*p_text != 0) {
         /* Display one character on EPD */
-        DrawCharAt(refcolumn, y, *p_text, font, colored);
+        DrawCharAt(refcolumn, y, *p_text, font, color);
         /* Decrement the column position by 16 */
         refcolumn += font->Width;
         /* Point on the next character */
@@ -184,7 +188,7 @@ void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int colore
 /**
 *  @brief: this draws a line on the frame buffer
 */
-void Paint::DrawLine(int x0, int y0, int x1, int y1, int colored) {
+void Paint::DrawLine(int x0, int y0, int x1, int y1, int color) {
     /* Bresenham algorithm */
     int dx = x1 - x0 >= 0 ? x1 - x0 : x0 - x1;
     int sx = x0 < x1 ? 1 : -1;
@@ -193,7 +197,7 @@ void Paint::DrawLine(int x0, int y0, int x1, int y1, int colored) {
     int err = dx + dy;
 
     while((x0 != x1) && (y0 != y1)) {
-        DrawPixel(x0, y0 , colored);
+        DrawPixel(x0, y0 , color);
         if (2 * err >= dy) {     
             err += dy;
             x0 += sx;
@@ -208,43 +212,43 @@ void Paint::DrawLine(int x0, int y0, int x1, int y1, int colored) {
 /**
 *  @brief: this draws a horizontal line on the frame buffer
 */
-void Paint::DrawHorizontalLine(int x, int y, int line_width, int colored) {
+void Paint::DrawHorizontalLine(int x, int y, int line_width, int color) {
     int i;
     for (i = x; i < x + line_width; i++) {
-        DrawPixel(i, y, colored);
+        DrawPixel(i, y, color);
     }
 }
 
 /**
 *  @brief: this draws a vertical line on the frame buffer
 */
-void Paint::DrawVerticalLine(int x, int y, int line_height, int colored) {
+void Paint::DrawVerticalLine(int x, int y, int line_height, int color) {
     int i;
     for (i = y; i < y + line_height; i++) {
-        DrawPixel(x, i, colored);
+        DrawPixel(x, i, color);
     }
 }
 
 /**
 *  @brief: this draws a rectangle
 */
-void Paint::DrawRectangle(int x0, int y0, int x1, int y1, int colored) {
+void Paint::DrawRectangle(int x0, int y0, int x1, int y1, int color) {
     int min_x, min_y, max_x, max_y;
     min_x = x1 > x0 ? x0 : x1;
     max_x = x1 > x0 ? x1 : x0;
     min_y = y1 > y0 ? y0 : y1;
     max_y = y1 > y0 ? y1 : y0;
     
-    DrawHorizontalLine(min_x, min_y, max_x - min_x + 1, colored);
-    DrawHorizontalLine(min_x, max_y, max_x - min_x + 1, colored);
-    DrawVerticalLine(min_x, min_y, max_y - min_y + 1, colored);
-    DrawVerticalLine(max_x, min_y, max_y - min_y + 1, colored);
+    DrawHorizontalLine(min_x, min_y, max_x - min_x + 1, color);
+    DrawHorizontalLine(min_x, max_y, max_x - min_x + 1, color);
+    DrawVerticalLine(min_x, min_y, max_y - min_y + 1, color);
+    DrawVerticalLine(max_x, min_y, max_y - min_y + 1, color);
 }
 
 /**
 *  @brief: this draws a filled rectangle
 */
-void Paint::DrawFilledRectangle(int x0, int y0, int x1, int y1, int colored) {
+void Paint::DrawFilledRectangle(int x0, int y0, int x1, int y1, int color) {
     int min_x, min_y, max_x, max_y;
     int i;
     min_x = x1 > x0 ? x0 : x1;
@@ -253,14 +257,14 @@ void Paint::DrawFilledRectangle(int x0, int y0, int x1, int y1, int colored) {
     max_y = y1 > y0 ? y1 : y0;
     
     for (i = min_x; i <= max_x; i++) {
-      DrawVerticalLine(i, min_y, max_y - min_y + 1, colored);
+      DrawVerticalLine(i, min_y, max_y - min_y + 1, color);
     }
 }
 
 /**
 *  @brief: this draws a circle
 */
-void Paint::DrawCircle(int x, int y, int radius, int colored) {
+void Paint::DrawCircle(int x, int y, int radius, int color) {
     /* Bresenham algorithm */
     int x_pos = -radius;
     int y_pos = 0;
@@ -268,10 +272,10 @@ void Paint::DrawCircle(int x, int y, int radius, int colored) {
     int e2;
 
     do {
-        DrawPixel(x - x_pos, y + y_pos, colored);
-        DrawPixel(x + x_pos, y + y_pos, colored);
-        DrawPixel(x + x_pos, y - y_pos, colored);
-        DrawPixel(x - x_pos, y - y_pos, colored);
+        DrawPixel(x - x_pos, y + y_pos, color);
+        DrawPixel(x + x_pos, y + y_pos, color);
+        DrawPixel(x + x_pos, y - y_pos, color);
+        DrawPixel(x - x_pos, y - y_pos, color);
         e2 = err;
         if (e2 <= y_pos) {
             err += ++y_pos * 2 + 1;
@@ -288,7 +292,7 @@ void Paint::DrawCircle(int x, int y, int radius, int colored) {
 /**
 *  @brief: this draws a filled circle
 */
-void Paint::DrawFilledCircle(int x, int y, int radius, int colored) {
+void Paint::DrawFilledCircle(int x, int y, int radius, int color) {
     /* Bresenham algorithm */
     int x_pos = -radius;
     int y_pos = 0;
@@ -296,12 +300,12 @@ void Paint::DrawFilledCircle(int x, int y, int radius, int colored) {
     int e2;
 
     do {
-        DrawPixel(x - x_pos, y + y_pos, colored);
-        DrawPixel(x + x_pos, y + y_pos, colored);
-        DrawPixel(x + x_pos, y - y_pos, colored);
-        DrawPixel(x - x_pos, y - y_pos, colored);
-        DrawHorizontalLine(x + x_pos, y + y_pos, 2 * (-x_pos) + 1, colored);
-        DrawHorizontalLine(x + x_pos, y - y_pos, 2 * (-x_pos) + 1, colored);
+        DrawPixel(x - x_pos, y + y_pos, color);
+        DrawPixel(x + x_pos, y + y_pos, color);
+        DrawPixel(x + x_pos, y - y_pos, color);
+        DrawPixel(x - x_pos, y - y_pos, color);
+        DrawHorizontalLine(x + x_pos, y + y_pos, 2 * (-x_pos) + 1, color);
+        DrawHorizontalLine(x + x_pos, y - y_pos, 2 * (-x_pos) + 1, color);
         e2 = err;
         if (e2 <= y_pos) {
             err += ++y_pos * 2 + 1;

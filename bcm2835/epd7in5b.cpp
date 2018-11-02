@@ -1,5 +1,5 @@
 /**
- *  @filename   :   epd7in5.cpp
+ *  @filename   :   epd7in5b.cpp
  *  @brief      :   Implements for e-paper library
  *  @author     :   Yehui from Waveshare
  *
@@ -25,7 +25,7 @@
  */
 
 #include <stdlib.h>
-#include "epd7in5.h"
+#include "epd7in5b.h"
 #include "epdif.h"
 
 Epd::~Epd() {
@@ -45,47 +45,35 @@ int Epd::Init(void) {
         return -1;
     }
     Reset();
-
     SendCommand(POWER_SETTING); 
     SendData(0x37);
     SendData(0x00);
-
     SendCommand(PANEL_SETTING);
     SendData(0xCF);
     SendData(0x08);
-    
     SendCommand(BOOSTER_SOFT_START);
-    SendData(0xc7);     
-    SendData(0xcc);
+    SendData(0xC7);     
+    SendData(0xCC);
     SendData(0x28);
-
-    SendCommand(POWER_ON);
-    WaitUntilIdle();
-
     SendCommand(PLL_CONTROL);
-    SendData(0x3c);        
-
+    SendData(0x3C);        
     SendCommand(TEMPERATURE_CALIBRATION);
     SendData(0x00);
-
     SendCommand(VCOM_AND_DATA_INTERVAL_SETTING);
     SendData(0x77);
-
     SendCommand(TCON_SETTING);
     SendData(0x22);
-
     SendCommand(TCON_RESOLUTION);
     SendData(0x02);     //source 640
     SendData(0x80);
     SendData(0x01);     //gate 384
     SendData(0x80);
-
     SendCommand(VCM_DC_SETTING);
     SendData(0x1E);      //decide by LUT file
-
-    SendCommand(0xe5);           //FLASH MODE            
+    SendCommand(0xE5);           //FLASH MODE            
     SendData(0x03);  
-
+    SendCommand(POWER_ON);
+    WaitUntilIdle();
     return 0;
 }
 
@@ -113,25 +101,9 @@ void Epd::Reset(void) {
 }
 
 void Epd::DisplayFrame(const unsigned char* frame_buffer) {
-    unsigned char temp1, temp2;
     SendCommand(DATA_START_TRANSMISSION_1);
-    for(int i = 0; i < 30720; i++) {   
-        temp1 = frame_buffer[i];
-        for(unsigned char j = 0; j < 8; j++) {
-            if(temp1 & 0x80)
-                temp2 = 0x03;
-            else
-                temp2 = 0x00;
-            temp2 <<= 4;
-            temp1 <<= 1;
-            j++;
-            if(temp1 & 0x80)
-                temp2 |= 0x03;
-            else
-                temp2 |= 0x00;
-            temp1 <<= 1;
-            SendData(temp2); 
-        }
+    for(int i = 0; i < this->width / 2 * this->height; i++) {   
+        SendData(frame_buffer[i]);
     }
     SendCommand(DISPLAY_REFRESH);
     DelayMs(100);
